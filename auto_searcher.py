@@ -85,11 +85,17 @@ def extract_market_data(url):
     except Exception as e:
         print(f"[!] 處理 {url} 時發生錯誤: {e}")
         return None, None
-        
+
 # --- 批次寫入管線 (升級整合) ---
 def run_pipeline(urls):
     init_db()
-    current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # 修正時區邏輯：強制獲取 UTC 時間並平移 8 小時至台灣時間
+    import datetime
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    tw_time = now_utc + datetime.timedelta(hours=8)
+    current_time = tw_time.strftime("%Y-%m-%d %H:%M:%S")
+
     print(f"\n[{current_time}] 啟動 AI 萃取引擎，開始寫入資料庫...")
     print("-" * 50)
 
