@@ -1,0 +1,56 @@
+[
+    {
+        "url": "https://en.wikipedia.org/wiki/Semiconductor",
+        "h1_title": "Semiconductor",
+        "h2_subheadings": [
+            "Contents",
+            "Properties",
+            "Materials",
+            "Physics of semiconductors",
+            "Early history of semiconductors",
+            "See also",
+            "References",
+            "Further reading",
+            "External links"
+        ],
+        "total_h2_count": 9
+    },
+    {
+        "url": "https://en.wikipedia.org/wiki/Taiwan_Semiconductor_Manufacturing_Company",
+        "h1_title": "TSMC",
+        "h2_subheadings": [
+            "Contents",
+            "History",
+            "Corporate affairs",
+            "Technologies",
+            "Production capabilities",
+            "Facilities",
+            "Sustainability",
+            "See also",
+            "References",
+            "External links"
+        ],
+        "total_h2_count": 10
+    },
+    {
+        "url": "https://en.wikipedia.org/wiki/Integrated_circuit",
+        "h1_title": "Integrated circuit",
+        "h2_subheadings": [
+            "Contents",
+            "Terminology",
+            "History",
+            "Design",
+            "Types",
+            "Manufacturing",
+            "Intellectual property",
+            "Generations",
+            "Silicon labeling and graffiti",
+            "ICs and IC families",
+            "See also",
+            "References",
+            "Further reading",
+            "External links"
+        ],
+        "total_h2_count": 14
+    }
+]
