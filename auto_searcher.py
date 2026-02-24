@@ -44,6 +44,7 @@ def get_latest_urls_from_rss(rss_urls, max_per_feed=2):
     return collected_urls
 
 # --- 核心萃取引擎 (保持不變) ---
+# 4. 核心萃取引擎
 def extract_market_data(url):
     headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
     try:
@@ -69,7 +70,13 @@ def extract_market_data(url):
         {raw_text}
         """
         
-        ai_response = model.generate_content(prompt)
+        # 新增的 AI 專屬防護網 (逾時強制切斷)
+        try:
+            ai_response = model.generate_content(prompt, request_options={"timeout": 30.0})
+        except Exception as ai_error:
+            print(f"[!] AI 處理失敗，跳過此筆。錯誤細節: {ai_error}")
+            return None, None
+
         clean_json_str = ai_response.text.replace('```json', '').replace('```', '').strip()
         extracted_data = json.loads(clean_json_str)
         
@@ -78,7 +85,7 @@ def extract_market_data(url):
     except Exception as e:
         print(f"[!] 處理 {url} 時發生錯誤: {e}")
         return None, None
-
+        
 # --- 批次寫入管線 (升級整合) ---
 def run_pipeline(urls):
     init_db()
