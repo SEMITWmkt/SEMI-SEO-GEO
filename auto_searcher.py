@@ -7,6 +7,9 @@ from bs4 import BeautifulSoup
 import google.generativeai as genai
 from dotenv import load_dotenv
 import feedparser  # 新增的雷達解析模組
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # 1. 載入金鑰與設定 AI
 load_dotenv()
@@ -26,6 +29,30 @@ def init_db():
             writer = csv.writer(file)
             writer.writerow(["抓取日期", "來源網址", "文章標題", "核心技術聚類", "目標受眾層級", "產業趨勢"])
         print(f"[*] 系統已建立全新資料庫：{DB_FILE}")
+def send_email_notification(log_msg):
+    sender_email = os.getenv("EMAIL_USER") 
+    password = os.getenv("EMAIL_PASS")
+    
+    if not sender_email or not password:
+        print("[!] 找不到郵件設定，跳過發信步驟。")
+        return
+
+    msg = MIMEMultipart()
+    msg['From'] = f"AI 情報機器人 <{sender_email}>"
+    msg['To'] = sender_email
+    msg['Subject'] = f"【半導體監測報】自動掃描完成 - {datetime.now().strftime('%Y-%m-%d')}"
+    
+    body = f"Bang-Lun 您好：\n\n今日情報掃描任務已完成。\n\n系統狀態：{log_msg}\n數據已同步至 GitHub，請開啟 Excel 戰情室查看。\n\n祝 工作順利"
+    msg.attach(MIMEText(body, 'plain'))
+    
+    try:
+        with smtplib.SMTP("smtp-mail.outlook.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, password)
+            server.send_message(msg)
+        print("[*] 郵件發送成功！")
+    except Exception as e:
+        print(f"[!] 郵件發送失敗: {e}")        
 
 # --- 新增：情報雷達管線 ---
 def get_latest_urls_from_rss(rss_urls, max_per_feed=2):

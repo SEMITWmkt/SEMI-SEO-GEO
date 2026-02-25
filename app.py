@@ -1,78 +1,73 @@
 import streamlit as st
-import os
-import json
+import requests
+from bs4 import BeautifulSoup
 import google.generativeai as genai
+import os
 from dotenv import load_dotenv
 
-# 1. 系統網頁設定 (這是 PM 定義產品外觀的地方)
-st.set_page_config(page_title="SEMI Taiwan 文案優化器", layout="wide")
-st.title("🚀 SEMI Taiwan SEO/AIEO 文案優化系統")
-st.markdown("基於市場競品 H2 結構數據的自動化行銷文案改寫引擎。")
+# 1. 介面極簡化 (Tesla Architecture)
+st.set_page_config(page_title="SEMI 文案武器", layout="centered")
+st.title("⚡ SEMI 競品對齊與文案優化引擎")
+st.markdown("輸入競品網址與你的草稿。系統將即時潛入對手網站爬取骨架，並強制升級你的文案。")
 
-# 2. 載入金鑰與 AI 大腦
+# 2. 系統大腦初始化與金鑰安全檢查
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
-
 if not api_key:
-    st.error("嚴重錯誤：找不到 API 金鑰。請確認 .env 檔案是否存在且設定正確。")
-    st.stop() # 停止渲染網頁
+    st.error("系統停機：找不到 API 金鑰。請檢查 .env 檔案。")
+    st.stop()
 
 genai.configure(api_key=api_key)
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-# 3. 讀取你的本機資料庫 (competitor_data.json)
-try:
-    with open('competitor_data.json', 'r', encoding='utf-8') as f:
-        database = json.load(f)
-except FileNotFoundError:
-    st.error("錯誤：找不到 competitor_data.json。請先執行爬蟲程式 (scraper.py) 建立資料庫。")
-    st.stop()
+# 3. 輸入區 (沒有多餘的儀表板，只有目標與彈藥)
+target_url = st.text_input("🎯 獵殺目標 (請貼上 1 篇高排名的競品網址)：", placeholder="https://...")
+draft_copy = st.text_area("📝 你的原始草稿：", height=200, placeholder="貼上需要被強化的文案...")
 
-# 整理競爭對手的結構，準備餵給 AI
-competitor_structures = ""
-for idx, data in enumerate(database):
-    competitor_structures += f"\n【競爭對手 {idx+1}】({data['h1_title']}):\n"
-    competitor_structures += ", ".join(data['h2_subheadings']) + "\n"
-
-# 4. 建立使用者介面 (UI) - 輸入區
-st.subheader("📝 輸入原始草稿")
-draft_copy = st.text_area(
-    "請在此貼上行銷同事撰寫的初稿：", 
-    height=200, 
-    placeholder="在此輸入或貼上簡陋的文案草稿..."
-)
-
-# 5. 執行按鈕與核心邏輯
-if st.button("⚡ 執行競品對齊與文案優化"):
-    if not draft_copy.strip():
-        st.warning("請先輸入草稿內容！")
+# 4. 核心執行邏輯 (按下去的瞬間，爬蟲與 AI 同步運作)
+if st.button("🔥 啟動即時分析與重構"):
+    if not target_url or not draft_copy.strip():
+        st.warning("彈藥不足：請確認已輸入「目標網址」與「草稿」。")
     else:
-        # st.spinner 會在網頁上顯示載入中的動畫，安撫使用者的等待焦慮
-        with st.spinner("系統連線中：正在將市場數據與草稿傳送給 Gemini AI 大腦分析..."):
-            
-            prompt = f"""
-            你現在是一位頂級的科技業 SEO/AIEO 行銷總監。
-            我有一段同事寫的初版行銷草稿，以及我們剛從市場上爬取下來的三篇高排名競爭對手文章的標題架構（H2）。
-
-            【市場競爭對手架構數據】：
-            {competitor_structures}
-
-            【同事的原始草稿】：
-            {draft_copy}
-
-            【你的任務】：
-            1. 痛點分析：請冷酷且專業地分析，我們的草稿對比競爭對手的架構，漏掉了哪些關鍵的產業維度。
-            2. 重磅改寫：請直接根據這些對手的優勢數據，將我們的草稿改寫成一篇結構更具權威性、符合搜尋引擎喜好的高階行銷文案。
-            """
-            
+        with st.spinner("系統運作中：正在潛入對手網站並喚醒 AI 大腦..."):
             try:
-                # 呼叫 API
-                response = model.generate_content(prompt)
-                st.success("✅ 分析與優化完成！")
+                # [模組 A：即時動態爬蟲]
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+                response = requests.get(target_url, headers=headers, timeout=10)
+                response.raise_for_status() # 檢查伺服器是否允許連線
                 
-                # 在網頁上優雅地展示結果
-                st.subheader("💡 專業優化結果")
-                st.write(response.text)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                h1 = soup.find('h1').text if soup.find('h1') else "無主要標題"
+                h2_tags = [h2.text.strip() for h2 in soup.find_all('h2') if h2.text.strip()]
                 
+                if not h2_tags:
+                    st.warning("警告：該目標網頁缺乏 H2 結構，AI 將僅依賴標題進行推演。")
+                    
+                competitor_structure = f"【競品標題】：{h1}\n【競品 H2 骨架】：{', '.join(h2_tags)}"
+                
+                # [模組 B：AI 系統重構]
+                prompt = f"""
+                你是一位頂級的科技業 SEO/AIEO 行銷總監。
+                我有一段初版草稿，以及我們剛即時爬取下來的競爭對手文章架構。
+
+                {competitor_structure}
+
+                【原始草稿】：
+                {draft_copy}
+
+                【你的任務】：
+                直接根據對手的優勢骨架，將原始草稿改寫成一篇結構更具權威性、符合搜尋引擎喜好的高階行銷文案。
+                不要說廢話，直接輸出改寫後的完美版本。
+                """
+                
+                result = model.generate_content(prompt)
+                
+                # 輸出展示層
+                st.success("✅ 即時重構完成！")
+                st.subheader("💡 戰略級文案輸出")
+                st.write(result.text)
+                
+            except requests.exceptions.RequestException as e:
+                st.error(f"連線失敗：無法爬取該網址 ({e})。請確認網址正確，或對方網站具有反爬蟲機制。")
             except Exception as e:
-                st.error(f"呼叫 API 發生異常：{e}")
+                st.error(f"系統異常：{e}")
