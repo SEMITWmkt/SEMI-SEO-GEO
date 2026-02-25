@@ -30,6 +30,8 @@ jobs:
       env:
         # 將剛剛設定的 GitHub Secret 注入環境變數
         GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        EMAIL_USER: ${{ secrets.EMAIL_USER }}
+        EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
       run: python auto_searcher.py
 
     - name: 5. 封裝並寫回資料庫 (CSV)
