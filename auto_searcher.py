@@ -1,7 +1,7 @@
 import os
 import csv
 import json
-import datetime
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 import google.generativeai as genai
