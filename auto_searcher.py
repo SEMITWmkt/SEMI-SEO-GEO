@@ -22,7 +22,7 @@ DB_FILE = "semi_market_data.csv"
 
 def init_db():
     if not os.path.exists(DB_FILE):
-        with open(DB_FILE, mode='w', newline='', encoding='utf-8') as file:
+        with open(DB_FILE, mode='w', newline='', encoding='utf-8-sig') as file:
             writer = csv.writer(file)
             writer.writerow(["抓取日期", "來源網址", "文章標題", "核心技術聚類", "目標受眾層級", "產業趨勢"])
         print(f"[*] 系統已建立全新資料庫：{DB_FILE}")
@@ -104,7 +104,7 @@ def run_pipeline(urls):
         title, ai_data = extract_market_data(url)
         
         if title and ai_data:
-            with open(DB_FILE, mode='a', newline='', encoding='utf-8') as file:
+            with open(DB_FILE, mode='a', newline='', encoding='utf-8-sig') as file:
                 writer = csv.writer(file)
                 writer.writerow([
                     current_time,
