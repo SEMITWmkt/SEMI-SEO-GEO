@@ -46,7 +46,7 @@ def send_email_notification(log_msg):
     msg.attach(MIMEText(body, 'plain'))
     
     try:
-        with smtplib.SMTP("smtp-mail.outlook.com", 587) as server:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
             server.login(sender_email, password)
             server.send_message(msg)
@@ -161,5 +161,6 @@ if __name__ == "__main__":
     # 階段二：將發現的新網址送入萃取管線
     if discovered_urls:
         run_pipeline(discovered_urls)
+        send_email_notification("今日 AI 半導體情報已成功擷取並寫入 CSV。")
     else:
         print("雷達未掃描到任何有效網址，系統休眠。")
