@@ -2,14 +2,17 @@ import os
 import csv
 import json
 import requests
+import time
 from datetime import datetime, timezone, timedelta
 from bs4 import BeautifulSoup
-import google.generativeai as genai
 from dotenv import load_dotenv
 import feedparser
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+
+# 2026 年最新版 SDK 載入方式
+from google import genai 
 
 # 1. 載入金鑰與設定 AI
 load_dotenv()
@@ -18,8 +21,8 @@ if not api_key:
     print("系統停機：找不到 API 金鑰。")
     exit()
 
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-2.0-flash') # 建議使用 flash 以確保速度
+# 初始化 2026 年最新版 Gemini Client
+client = genai.Client(api_key=api_key)
 
 DB_FILE = "semi_market_data.csv"
 
@@ -31,7 +34,6 @@ def init_db():
         print(f"[*] 系統已建立全新資料庫：{DB_FILE}")
 
 def send_email_notification(new_records):
-    """將新抓取的數據動態生成報表並發送"""
     sender_email = os.getenv("EMAIL_USER") 
     password = os.getenv("EMAIL_PASS")
     
@@ -44,7 +46,6 @@ def send_email_notification(new_records):
     msg['To'] = sender_email
     msg['Subject'] = f"【半導體戰報】今日新增 {len(new_records)} 則關鍵情報 - {datetime.now().strftime('%Y-%m-%d')}"
     
-    # 建立信件內容：動態摘要
     table_rows = ""
     for idx, r in enumerate(new_records, 1):
         table_rows += f"{idx}. 【{r['title']}】\n"
@@ -103,7 +104,12 @@ def extract_market_data(url):
         }}
         內容：{raw_text}"""
         
-        ai_response = model.generate_content(prompt, request_options={"timeout": 30.0})
+        # 🎯 核心升級：精確使用我們剛剛測出的有效模型
+        ai_response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt
+        )
+        
         clean_json_str = ai_response.text.replace('```json', '').replace('```', '').strip()
         return title, json.loads(clean_json_str)
     except Exception as e:
@@ -113,7 +119,6 @@ def extract_market_data(url):
 def run_pipeline(discovered_items):
     init_db()
     
-    # 強力去重：讀取現有資料庫的 URL 和 標題
     existing_urls = set()
     existing_titles = set()
     if os.path.exists(DB_FILE):
@@ -124,8 +129,6 @@ def run_pipeline(discovered_items):
                 existing_titles.add(row['文章標題'].strip())
 
     new_records_for_email = []
-    
-    # 台灣時間處理
     tw_time = datetime.now(timezone.utc) + timedelta(hours=8)
     current_time_str = tw_time.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -133,7 +136,6 @@ def run_pipeline(discovered_items):
         url = item['url'].strip()
         rss_title = item['title'].strip()
 
-        # 雙重檢查：URL 或 標題 只要重複就不抓
         if url in existing_urls or rss_title in existing_titles:
             print(f"[-] 跳過重複情報: {rss_title[:20]}...")
             continue
@@ -142,7 +144,6 @@ def run_pipeline(discovered_items):
         title, ai_data = extract_market_data(url)
         
         if title and ai_data:
-            # 存入 CSV
             with open(DB_FILE, mode='a', newline='', encoding='utf-8-sig') as file:
                 writer = csv.writer(file)
                 writer.writerow([
@@ -152,16 +153,17 @@ def run_pipeline(discovered_items):
                     ai_data.get("Industry_Trend", "N/A")
                 ])
             
-            # 蒐集新數據給信件
             new_records_for_email.append({
                 'title': title,
                 'tech': ai_data.get("Tech_Cluster"),
                 'trend': ai_data.get("Industry_Trend"),
                 'url': url
             })
-            # 同步更新去重清單，防止同一輪內重複
             existing_urls.add(url)
             existing_titles.add(title)
+            
+            # 專業素養：加上 3 秒延遲，避免連續請求遭 API 阻擋
+            time.sleep(3)
 
     if new_records_for_email:
         send_email_notification(new_records_for_email)
@@ -171,10 +173,12 @@ def run_pipeline(discovered_items):
 if __name__ == "__main__":
     target_rss_feeds = [
         "https://technews.tw/category/semiconductor/feed/",
-        "https://www.bnext.com.tw/rss"
+        # 暫時關閉已損壞的數位時代 RSS，避免拖慢效能
+        # "https://www.bnext.com.tw/rss"
     ]
     
-    discovered_items = get_latest_urls_from_rss(target_rss_feeds, max_per_feed=3)
+    # 測試階段，先抓最新 2 篇即可
+    discovered_items = get_latest_urls_from_rss(target_rss_feeds, max_per_feed=2)
     
     if discovered_items:
         run_pipeline(discovered_items)
